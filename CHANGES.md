@@ -21,3 +21,5 @@ Removals are logged like additions.
 Part D: added provider token-difference measurements in `eval/price_surface.py`, tracker-based counts and surface pricing in `eval/measure_03.py`, pre-evaluation predictions, and focused measurement tests. Reviser requests now include the tool list required by the measurement design.
 
 Post-measurement follow-up: preserve the entire original batch and its reports; add complete step-format examples and rejected-plan context to the planner. Keep validation, write controls, and retry bounds unchanged. A second measured batch is explicitly disclosed as post-evaluation work.
+
+Rollback: follow-up evaluation scored 80/82 versus original 81.33/82. Preserved the entire follow-up under reports/batches/followup, restored the original planner and original 24-run tracker/trace evidence, and disclosed both results in LAB_03.md. No runs were mixed across batches.
