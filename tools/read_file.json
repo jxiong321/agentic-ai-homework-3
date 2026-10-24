@@ -1,11 +1,67 @@
 {
-  "name": "read_file",
-  "description": "Read a file.",
+  "name": "codebase_read_file",
+  "description": "Read one repository-relative text file. Returns path, content, truncated and total_chars. concise is the default and caps content at 4000 characters; detailed caps it at 20000. truncated=true means content is incomplete. Empty content means an existing empty file; a missing, excluded or non-text file is an error. Excludes config, node_modules and .git.",
   "input_schema": {
     "type": "object",
     "properties": {
-      "path": {"type": "string", "description": "File path"}
+      "path": {
+        "type": "string",
+        "description": "Repository-relative file path from a search result. Selects one file; do not supply an absolute path or invent a filename."
+      },
+      "response_format": {
+        "type": "string",
+        "description": "Choose concise by default to save context; detailed returns more code when the shorter result is insufficient.",
+        "enum": [
+          "concise",
+          "detailed"
+        ]
+      }
     },
-    "required": ["path"]
+    "required": [
+      "path",
+      "response_format"
+    ],
+    "additionalProperties": false
+  },
+  "examples": [
+    {
+      "input": {
+        "path": "README.md",
+        "response_format": "concise"
+      },
+      "note": "Typical: inspect a file returned by search using the cheaper content limit."
+    },
+    {
+      "input": {
+        "path": "src/Report.ts",
+        "response_format": "detailed"
+      },
+      "note": "Hard case: request more content when a concise read was truncated. Preserve the exact path casing from search; detailed results may still be truncated at 20000 characters."
+    }
+  ],
+  "strict": true,
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "path": {
+        "type": "string"
+      },
+      "content": {
+        "type": "string"
+      },
+      "truncated": {
+        "type": "boolean"
+      },
+      "total_chars": {
+        "type": "integer"
+      }
+    },
+    "required": [
+      "path",
+      "content",
+      "truncated",
+      "total_chars"
+    ],
+    "additionalProperties": false
   }
 }

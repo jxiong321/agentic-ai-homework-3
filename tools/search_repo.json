@@ -1,14 +1,127 @@
 {
-  "name": "search_repo",
-  "description": "Search the code.",
+  "name": "codebase_search",
+  "description": "Search literal text, case-insensitively, in repository file contents (not filenames). Excludes config, node_modules and .git. Returns query, query_valid, count (all matching lines), shown, results (path, line, excerpt), truncated, and index_age. Zero matches is success with count=0 and query_valid=true; an empty/whitespace query, query over 200 characters, or malformed path glob is an error. Defaults to concise: at most 10 hits with 160-character excerpts; detailed allows 20 hits with 500-character excerpts. truncated indicates omitted matches or shortened excerpts. index_age reports how old the index is, or live disk for deep search.",
   "input_schema": {
     "type": "object",
     "properties": {
-      "query": {"type": "string", "description": "Text to look for"},
-      "max_results": {"type": "integer", "description": "How many results. Default 10."},
-      "filter": {"type": "string", "description": "Optional filter expression"},
-      "deep": {"type": "boolean", "description": "Whether to do a deep search. Default false."}
+      "query": {
+        "type": "string",
+        "description": "Literal text to find, 1\u2013200 characters and not whitespace-only. Use a distinctive code term or error string; broad terms consume more result space."
+      },
+      "max_results": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "Maximum matching lines, 1\u201320; null uses 10. Smaller limits save context; concise additionally caps results at 10."
+      },
+      "path_glob": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "Restrict matching repository-relative paths using a glob such as src/*.ts; null searches all indexed paths. Supports *, ?, brackets and {a,b}; no SQL, free-text filter syntax, absolute paths or .. segments. Restriction reduces results."
+      },
+      "deep": {
+        "type": "boolean",
+        "description": "False uses the cheaper prebuilt index; true scans current files from disk, costing more local I/O. Choose true when index age makes freshness uncertain."
+      },
+      "response_format": {
+        "type": "string",
+        "description": "Choose concise by default to save context; detailed returns more code when the shorter result is insufficient.",
+        "enum": [
+          "concise",
+          "detailed"
+        ]
+      }
     },
-    "required": ["query"]
+    "required": [
+      "query",
+      "max_results",
+      "path_glob",
+      "deep",
+      "response_format"
+    ],
+    "additionalProperties": false
+  },
+  "examples": [
+    {
+      "input": {
+        "query": "export",
+        "max_results": null,
+        "path_glob": null,
+        "deep": false,
+        "response_format": "concise"
+      },
+      "note": "Typical: begin with a cheap indexed literal-text search, the default ten-result limit, and no path restriction."
+    },
+    {
+      "input": {
+        "query": "export",
+        "max_results": 20,
+        "path_glob": "src/*.{ts,tsx}",
+        "deep": true,
+        "response_format": "detailed"
+      },
+      "note": "Hard case: if earlier results were truncated and the index may be stale, search current TypeScript files with a larger result budget. The glob filters paths; query still searches file contents. This costs more disk I/O and context; zero matches remains a valid result."
+    }
+  ],
+  "strict": true,
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string"
+      },
+      "query_valid": {
+        "type": "boolean",
+        "const": true
+      },
+      "count": {
+        "type": "integer"
+      },
+      "shown": {
+        "type": "integer"
+      },
+      "results": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "line": {
+              "type": "integer"
+            },
+            "excerpt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "line",
+            "excerpt"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "truncated": {
+        "type": "boolean"
+      },
+      "index_age": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "query",
+      "query_valid",
+      "count",
+      "shown",
+      "results",
+      "truncated",
+      "index_age"
+    ],
+    "additionalProperties": false
   }
 }

@@ -1,14 +1,83 @@
 {
-  "name": "open_pr",
-  "description": "Open a pull request.",
+  "name": "pulls_open_draft",
+  "description": "Open one draft PR proposing a change in prose; no commits are needed. Use before the final comment, only when triage identifies a file; skip when file is none. Returns issue_id, pr_id, branch, draft=true and truncated=false; at most one receipt without echoing title or body. Empty branch, title or body is an error, never an empty success.",
   "input_schema": {
     "type": "object",
     "properties": {
-      "number": {"type": "integer", "description": "Issue number"},
-      "branch": {"type": "string", "description": "Branch"},
-      "title": {"type": "string", "description": "Title"},
-      "body": {"type": "string", "description": "Body"}
+      "number": {
+        "type": "integer",
+        "description": "Positive issue number to target; use the assigned issue, not a guessed ID. Selects one issue per call."
+      },
+      "branch": {
+        "type": "string",
+        "description": "Use repomind/issue-<number> for the assigned issue. Identifies the proposed change; opening a PR writes to the mock remote."
+      },
+      "title": {
+        "type": "string",
+        "description": "Nonblank summary, at most 200 characters, for a reviewer to recognize the proposed change."
+      },
+      "body": {
+        "type": "string",
+        "description": "Nonblank proposal, at most 4000 characters, naming the repository file and describing the intended change. No actual patch or commit is required."
+      }
     },
-    "required": ["number", "branch", "title", "body"]
+    "required": [
+      "number",
+      "branch",
+      "title",
+      "body"
+    ],
+    "additionalProperties": false
+  },
+  "examples": [
+    {
+      "input": {
+        "number": 4191,
+        "branch": "repomind/issue-4191",
+        "title": "Clarify local startup instructions",
+        "body": "Propose updating README.md to document the supported startup command after confirming it in package.json."
+      },
+      "note": "Typical: when evidence supports a documentation change, open one draft proposal before posting the triage comment; no commit is required."
+    },
+    {
+      "input": {
+        "number": 4192,
+        "branch": "repomind/issue-4192",
+        "title": "Review export cleanup behavior",
+        "body": "Propose inspecting src/Report.ts and ensuring the export control is re-enabled after a failed request, if investigation confirms this is the responsible file."
+      },
+      "note": "Hard case: a draft can propose a change in prose without a patch, but use this file only if investigation identified it. If the draft triage names none, do not call this tool. After a timeout, the harness must resolve the original write rather than the model inventing a new branch."
+    }
+  ],
+  "strict": true,
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "issue_id": {
+        "type": "string"
+      },
+      "pr_id": {
+        "type": "string"
+      },
+      "branch": {
+        "type": "string"
+      },
+      "draft": {
+        "type": "boolean",
+        "const": true
+      },
+      "truncated": {
+        "type": "boolean",
+        "const": false
+      }
+    },
+    "required": [
+      "issue_id",
+      "pr_id",
+      "branch",
+      "draft",
+      "truncated"
+    ],
+    "additionalProperties": false
   }
 }

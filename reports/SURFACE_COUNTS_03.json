@@ -1,0 +1,57 @@
+{
+  "at": "2026-10-24T02:15:07.427576+00:00",
+  "starter_commit": "ed6b2e9cba6a548af2c144a767dd7cc6f704866d",
+  "model": "gemini-3.5-flash-lite",
+  "baseline": 22,
+  "definitions_hash": "8a5ce6be549bcafc",
+  "method": "Same system and one user message; subtract baseline prompt_tokens, including cached tokens. List appended after two newlines.",
+  "before": {
+    "all_five": 386,
+    "alone": {
+      "read_issue": 51,
+      "search_repo": 114,
+      "read_file": 48,
+      "post_comment": 70,
+      "open_pr": 103
+    },
+    "list": 117,
+    "names": {
+      "read_issue": "read_issue",
+      "search_repo": "search_repo",
+      "read_file": "read_file",
+      "post_comment": "post_comment",
+      "open_pr": "open_pr"
+    }
+  },
+  "after": {
+    "all_five": 2056,
+    "alone": {
+      "read_issue": 243,
+      "search_repo": 644,
+      "read_file": 321,
+      "post_comment": 337,
+      "open_pr": 511
+    },
+    "list": 1337,
+    "names": {
+      "tracker_read_issue": "read_issue",
+      "codebase_search": "search_repo",
+      "codebase_read_file": "read_file",
+      "tracker_post_comment": "post_comment",
+      "pulls_open_draft": "open_pr"
+    }
+  },
+  "served_by": "gemini-3.5-flash-lite",
+  "totals": {
+    "model_calls": 15,
+    "prompt_tokens": 6668,
+    "output_tokens": 15,
+    "cache_read_tokens": 0,
+    "total_tokens": 6683,
+    "cost_usd": 0.002038,
+    "unpriced_calls": 0,
+    "models": [
+      "gemini-3.5-flash-lite"
+    ]
+  }
+}

@@ -1,12 +1,60 @@
 {
-  "name": "post_comment",
-  "description": "Post a comment on an issue.",
+  "name": "tracker_post_comment",
+  "description": "Post one public triage comment to an issue; call last, after any required draft PR. Returns issue_id, comment_id and truncated=false, at most one receipt without echoing the body. Empty body is an error, never an empty success. This writes to the tracker; do not use it to draft or inspect text.",
   "input_schema": {
     "type": "object",
     "properties": {
-      "number": {"type": "integer", "description": "Issue number"},
-      "body": {"type": "string", "description": "Comment text"}
+      "number": {
+        "type": "integer",
+        "description": "Positive issue number to target; use the assigned issue, not a guessed ID. Selects one issue per call."
+      },
+      "body": {
+        "type": "string",
+        "description": "Nonempty final comment, at most 4000 characters. First two lines are label: <label> and file: <repository path or none>. This text becomes visible; supply only the final triage, not reasoning notes."
+      }
     },
-    "required": ["number", "body"]
+    "required": [
+      "number",
+      "body"
+    ],
+    "additionalProperties": false
+  },
+  "examples": [
+    {
+      "input": {
+        "number": 4191,
+        "body": "label: docs\nfile: README.md"
+      },
+      "note": "Typical format: post the final triage after evidence supports this file and the required draft PR has completed. This is an example, not a precomputed answer."
+    },
+    {
+      "input": {
+        "number": 4192,
+        "body": "label: question\nfile: none"
+      },
+      "note": "Hard case: if investigation concludes that no file needs changing, use the literal none and skip the PR. This illustrates a conditional outcome, not the answer to this issue; post only after investigation."
+    }
+  ],
+  "strict": true,
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "issue_id": {
+        "type": "string"
+      },
+      "comment_id": {
+        "type": "string"
+      },
+      "truncated": {
+        "type": "boolean",
+        "const": false
+      }
+    },
+    "required": [
+      "issue_id",
+      "comment_id",
+      "truncated"
+    ],
+    "additionalProperties": false
   }
 }

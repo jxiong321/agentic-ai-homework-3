@@ -14,6 +14,7 @@ from pathlib import Path
 import yaml
 
 from harness.client import tool_result
+from tools import ProtocolError, WriteUnconfirmed
 
 
 @dataclass(frozen=True)
@@ -62,6 +63,12 @@ def run_loop(client, tools, system: str, user_message: str, bounds: Bounds, trac
         for call in response.tool_calls:
             try:
                 result = tools.call(call.name, call.input)
+            except WriteUnconfirmed as exc:
+                trace.end("escalated", detail=str(exc))
+                return last_text
+            except ProtocolError:
+                trace.end("tool_error", detail="Tool protocol error; see the harness log.")
+                return last_text
             except Exception as exc:  # a tool that raises, rather than reporting an error
                 trace.end("tool_error", detail=f"{call.name}: {exc}")
                 return last_text

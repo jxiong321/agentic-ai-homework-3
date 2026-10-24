@@ -1,0 +1,2 @@
+{"event": "write_retry", "run_id": "planned-4191-s01-d45ef9", "tool": "pulls_open_draft", "attempt": 1, "key": "9c11e55943be7cd72c39ddf57b1a044bb34e3789718c644dcef6886f1ac67d44", "verified": true}
+{"event": "write_retry", "run_id": "planned-4191-s01-d45ef9", "tool": "pulls_open_draft", "attempt": 2, "key": "9c11e55943be7cd72c39ddf57b1a044bb34e3789718c644dcef6886f1ac67d44", "verified": true}

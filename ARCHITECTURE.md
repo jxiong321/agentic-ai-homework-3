@@ -17,18 +17,16 @@ What each layer is for (Lecture 1, slides 42 to 44):
 - **Observability**: a step-by-step record of what it did.
 - **Evaluation**: measuring quality, before and after release.
 
-The table below is RepoMind as Assignment 2 left it. In Assignment 3, the Tools row
-comes to cite the boundary check and the key, and any other row your work changes
-changes with it.
+The table includes Assignment 3 tool validation and write-recovery controls.
 
 | Layer | What does this job | Where it is enforced | Status |
 |---|---|---|---|
 | Model | The configured model, called only through the metered client | `harness/client.py:120` | present |
-| Harness | The loop, with three bounds checked in code; a plan validated before it runs, and an executor that runs only the plan's steps | `agent/loop.py:38`, `ways/planned.py:102`, `ways/planned.py:186` | present |
-| Tools | Five tools behind one registry (open_pr arrived with Assignment 3's starter); every write is stamped with the run_id | `tools/__init__.py:104`, `harness/tracker.py:208` | partial: nothing checks a call before it runs, and a write that fails is a guess |
+| Harness | Bounded loop, validated plans, fixed execution order, prepared draft before either write | `agent/loop.py:32`, `ways/planned.py:91`, `ways/planned.py:316` | present |
+| Tools | Five structured tools; argument/result boundary checks, derived write keys, pre-write checks and verified recovery | `tools/__init__.py:276`, `tools/validation.py:22`, `tools/validation.py:60`, `tools/__init__.py:96`, `tools/__init__.py:212` | present |
 | Memory & State | A run's progress file, outside the model's context | `ways/notes.py:67` | partial: nothing survives a run |
-| Control & Policy | The second pass holds a draft that still fails; nothing else decides which writes need a person | `ways/planned.py:272` | partial |
-| Observability | One trace line per model call and per tool call, and the plan as data before it runs | `agent/loop.py:50`, `ways/planned.py:76` | partial: traces, no alerts |
+| Control & Policy | Review before writes, fail-closed hooks, escalation when write outcomes cannot be confirmed | `ways/planned.py:316`, `tools/__init__.py:164`, `tools/__init__.py:187` | partial: operator review required, no approval UI |
+| Observability | Model/plan traces, protocol diagnostics, and per-attempt tool records including keys and denied calls | `tools/__init__.py:152`, `tools/__init__.py:145`, `harness/calls.py:47` | partial: records, no alert delivery |
 | Evaluation | The grounded check reads the tracker, never the agent | `eval/check_triage.py:7` | partial: offline only |
 
-**Empty layers: 0 of 7**, and five are partial.
+**Empty layers: 0 of 7**, and four are partial.

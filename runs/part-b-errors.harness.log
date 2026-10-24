@@ -1,0 +1,2 @@
+{"event": "protocol_error", "run_id": "part-b-errors", "tool": "nonexistent_tool", "arguments": {"number": 4191}, "reason": "Unknown tool 'nonexistent_tool'; registered tools: ['tracker_read_issue', 'codebase_search', 'codebase_read_file', 'tracker_post_comment', 'pulls_open_draft']."}
+{"event": "protocol_error", "run_id": "part-b-errors", "tool": "nonexistent_tool", "arguments": {"number": 4191}, "reason": "Unknown tool 'nonexistent_tool'; registered tools: ['tracker_read_issue', 'codebase_search', 'codebase_read_file', 'tracker_post_comment', 'pulls_open_draft']."}

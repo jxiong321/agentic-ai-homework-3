@@ -1,0 +1,1 @@
+{"event": "verification_unavailable", "run_id": "planned-4192-s03-063953", "tool": "tools.open_pr", "error": "ReadbackUnavailable('the tracker could not be read; try again later')"}

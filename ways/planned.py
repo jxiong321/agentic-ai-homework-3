@@ -3,8 +3,8 @@ boundary, revise at one checkpoint, and a second pass before posting.
 It ships in Assignment 3's starter in place of your own Assignment 2 code, changed in
 two ways only: it finds each tool by its role in tools/roles.yaml (harness.roles), so
 a tool you rename still runs, and it reads a search result as text or as JSON
-(harness.formats.result_paths). The plan rule is still Assignment 2's, the comment
-last; a PR step runs like any other step, unskipped, until Part C.
+(harness.formats.result_paths). The plan now requires one PR immediately before one final comment. The executor
+prepares/reviews the draft before either write and skips the PR when its file is none.
 
 The boundary: the executor runs the plan's steps in order and nothing else. Where a
 step's arguments are "$fill", one model call fills them, offered that step's tool
@@ -40,6 +40,8 @@ import copy
 import json
 import re
 
+from tools import ProtocolError, ToolError, WriteUnconfirmed
+from tools.validation import validate_input
 from agent.critique import self_critique, verify
 from agent.diff import step_args
 from agent.plan import SCHEMA, make_plan, revise_plan
@@ -70,6 +72,15 @@ def allows_null(spec: dict) -> bool:
 
 
 def run(ctx) -> None:
+    try:
+        _run(ctx)
+    except WriteUnconfirmed as exc:
+        ctx.trace.end("escalated", detail=str(exc))
+    except ProtocolError:
+        ctx.trace.end("tool_error", detail="Tool protocol error; see the harness log.")
+
+
+def _run(ctx) -> None:
     plan = plan_until_valid(ctx)
     if plan is None:
         return
@@ -82,9 +93,37 @@ def schema_check(ctx, plan: dict, version: int) -> list[dict]:
     failure is written as a schema line, and comes back as failures for a re-plan."""
     problems = schema_errors({k: v for k, v in plan.items() if k != "meta"}, SCHEMA)
     steps = plan.get("steps") or []
-    if not steps or not isinstance(steps[-1], dict) or role(steps[-1].get("tool")) != "comment":
-        problems.append(f"the plan's last step is not the comment tool, {tool_for('comment')}: the comment "
-                        "comes last")
+    step_roles = [role(s.get("tool")) if isinstance(s, dict) else None for s in steps]
+    if step_roles.count("comment") != 1 or not step_roles or step_roles[-1] != "comment":
+        problems.append("The plan must contain exactly one comment step, last.")
+    if step_roles.count("open_pr") != 1 or len(step_roles) < 2 or step_roles[-2] != "open_pr":
+        problems.append("The plan must contain exactly one PR step, immediately before the final comment.")
+    for step in steps:
+        if not isinstance(step, dict):
+            continue
+        try:
+            arguments = json.loads(step.get('args_json', ''))
+        except (ValueError, TypeError):
+            problems.append(f"step {step.get('id')}: args_json must decode once to a JSON object; do not double-escape its quotes")
+            continue
+        if not isinstance(arguments, dict):
+            problems.append(f"step {step.get('id')}: args_json must contain an object")
+            continue
+        if step.get('tool') not in ctx.tools.names():
+            continue  # existing validator handles unknown tool names
+        schema = ctx.tools.definition(step['tool'])['input_schema']
+        for key in schema.get('required', []):
+            if key not in arguments:
+                problems.append(f"step {step.get('id')}: args_json missing required field {key}")
+        for key, value in arguments.items():
+            if key not in schema['properties']:
+                problems.append(f"step {step.get('id')}: unknown argument {key}")
+            elif value == FILL:
+                continue
+            elif isinstance(value, str) and FILL in value:
+                problems.append(f"step {step.get('id')}: {key} contains embedded $fill; use the entire value \"$fill\" instead")
+            else:
+                problems.extend(f"step {step.get('id')}, {key}: {e}" for e in schema_errors(value, schema['properties'][key]))
     if problems:
         ctx.trace.event("schema", version=version, errors=problems[:20])
     return [{"step": None, "check": "schema", "error": e} for e in problems[:5]]
@@ -118,6 +157,8 @@ class Executor:
         self.version = 1
         self.results: list[dict] = []    # step_results (checks/FORMATS.md, section 10.3), in the order steps ran
         self.outputs: dict[str, str] = {}  # each step's tool output, for later calls; never shown to the reviser
+        self.prepared_comment = None
+        self.triage_file = None
         self.calls = 0                   # execute and critique calls so far: the step number of the next lines
         self.revisions = 0
         self.revised: set[str] = set()   # ids of steps a revision added or changed: the checkpoint follows them
@@ -132,6 +173,10 @@ class Executor:
             step = self.next_step()
             if step is None:
                 return                            # the plan is finished; the runner writes completed
+            if role(step.get("tool")) == "open_pr":
+                if not self.open_pr(step):
+                    return
+                continue
             if role(step.get("tool")) == "comment":
                 if not self.comment(step):
                     return
@@ -182,8 +227,11 @@ class Executor:
                                               messages=[{"role": "user", "content": self.fill_request(step, fixed, keys, note)}])
             self.ctx.trace.model_call(self.calls, response, purpose=purpose)
             for call in response.tool_calls:
+                if not isinstance(call.name, str) or call.name not in self.ctx.tools.names():
+                    self.ctx.tools.protocol_error(call.name, call.input, "Unknown or malformed tool name in planned executor response.")
                 if call.name != step["tool"]:
                     self.refuse(step, call)       # the boundary: never run, always traced
+                    note += f"\nYour previous attempt called {call.name}, which this step cannot execute. Call only {step['tool']} using the evidence already available; do not add another search step."
                     continue
                 filled = {**{k: v for k, v in call.input.items() if k in props}, **fixed}   # the plan's values win
                 if any(k not in filled or filled[k] in ("", FILL) or (filled[k] is None and k not in nullable)
@@ -201,8 +249,11 @@ class Executor:
 
     def context(self) -> list[str]:
         """What the run has gathered so far, one block per step, for a fill or a critique."""
-        return [f"## Step {r['id']}, {r['tool']}, {r['status']}\n{self.outputs.get(str(r['id']), '')[:CONTEXT_CHARS]}"
-                for r in self.results]
+        context = [f"## Step {r['id']}, {r['tool']}, {r['status']}\n{self.outputs.get(str(r['id']), '')[:CONTEXT_CHARS]}"
+                   for r in self.results]
+        if self.prepared_comment is not None:
+            context.append("Prepared final triage (already reviewed; PR must name this file):\n" + self.prepared_comment[arg('comment', 'body')])
+        return context
 
     def fill_request(self, step: dict, fixed: dict, keys: list[str], note: str = "") -> str:
         parts = [f"Triage issue #{self.ctx.issue_number}. You are running step {step.get('id')} of a fixed "
@@ -242,7 +293,7 @@ class Executor:
         if ok or self.revisions >= MAX_REVISIONS:
             return False
         self.revisions += 1
-        proposed = revise_plan(self.ctx.client, self.plan, self.results, trace=self.ctx.trace)
+        proposed = revise_plan(self.ctx.client, self.plan, self.results, trace=self.ctx.trace, tool_schemas=self.ctx.tools.schemas)
         broken = schema_check(self.ctx, proposed, self.version + 1)
         verdict = {"valid": False, "failures": broken} if broken else validate(proposed)
         self.ctx.trace.event("revision", checkpoint=name, version=self.version + 1, valid=verdict["valid"],
@@ -261,18 +312,68 @@ class Executor:
         self.ctx.trace.plan(self.version, proposed)
         return True
 
-    # -- the comment, and the second pass before it ----------------------------------------------
-    def comment(self, step: dict) -> bool:
-        """Draft, run the second pass, then post once. False when the run has ended."""
+    # -- prepare/review before writes, then PR and saved comment ----------------------------------------------
+    def prepare_comment(self, step: dict) -> bool:
+        """Prepare and review once before either write, without executing a plan step."""
         draft = self.filled(step, step_args(step))
         if draft is None:
             return False
         final = self.second_pass(step, draft) if self.critique else draft
         if final is None:
-            self.record(step, draft, None, "held")
-            self.ctx.trace.end("escalated", detail=f"the draft still failed the second pass after {MAX_ROUNDS} rounds")
+            self.ctx.trace.end("escalated", detail=f"the draft still failed the second pass after {MAX_ROUNDS} rounds; no writes performed")
             return False
-        self.record(step, final, self.ctx.call_tool(self.calls, step["tool"], final, plan_step=step.get("id")))
+        try:
+            final = validate_input(self.ctx.tools.definition(step['tool']), final, self.ctx.tools.ctx, 'post_comment')
+            from harness.formats import LABELS
+            label, file = parse_triage_comment(final[arg('comment', 'body')])
+            if label not in LABELS or file is None or FILL in str(file):
+                raise ToolError("Draft must contain a valid label and file path or none.")
+            if final[arg('comment', 'number')] != self.ctx.issue_number:
+                raise ToolError("Draft issue number must match the assigned issue.")
+        except ToolError as exc:
+            self.ctx.trace.end("escalated", detail=f"Invalid draft before writes: {exc}")
+            return False
+        self.prepared_comment = copy.deepcopy(final)
+        self.triage_file = file
+        self.ctx.trace.event("draft_prepared", plan_step=step.get('id'), file=file, critique=self.ctx.critique)
+        return True
+
+    def open_pr(self, step: dict) -> bool:
+        comment_step = self.plan['steps'][-1]
+        if not self.prepare_comment(comment_step):
+            return False
+        if self.triage_file == 'none':
+            self.ctx.trace.event("pr_skipped", plan_step=step.get('id'), reason="draft names file: none")
+            self.record(step, step_args(step), None)
+            return True
+        args = self.filled(step, step_args(step))
+        if args is None:
+            return False
+        body = arg('open_pr', 'body')
+        if args.get(arg('open_pr', 'number')) != self.ctx.issue_number:
+            self.ctx.trace.end("escalated", detail="PR issue differs from assigned issue; no comment posted")
+            return False
+        if self.triage_file not in str(args.get(body, '')):
+            self.ctx.trace.end("escalated", detail="PR proposal does not name the prepared triage file; no comment posted")
+            return False
+        result = self.ctx.call_tool(self.calls, step['tool'], args, plan_step=step.get('id'))
+        self.record(step, args, result)
+        if result.is_error:
+            self.ctx.trace.end("escalated", detail="PR failed; final comment withheld")
+            return False
+        return True
+
+    def comment(self, step: dict) -> bool:
+        """Post the saved reviewed draft unchanged; never ask the model to redraft."""
+        if self.prepared_comment is None:
+            self.ctx.trace.end("escalated", detail="No prepared draft; final comment withheld")
+            return False
+        final = copy.deepcopy(self.prepared_comment)
+        result = self.ctx.call_tool(self.calls, step['tool'], final, plan_step=step.get('id'))
+        self.record(step, final, result)
+        if result.is_error:
+            self.ctx.trace.end("escalated", detail="Final comment failed")
+            return False
         return True
 
     def evidence(self) -> dict:

@@ -11,9 +11,12 @@ def run(ctx, number, body, idempotency_key=None):
     from tools import ToolError
 
     if not str(body).strip():
-        raise ToolError("comment body is empty")
+        raise ToolError("Invalid body: supply a nonblank triage comment of at most 4000 characters, beginning with label: and file: lines.")
+    if len(str(body)) > 4000:
+        raise ToolError("body must be at most 4000 characters; shorten the comment.")
     try:
         comment = ctx.tracker.post_comment(ctx.run_id, int(number), str(body), key=idempotency_key)
     except IssueNotFound:
-        raise ToolError(f"issue {number} not found")
-    return f"Posted comment {comment['id']} on issue {number}."
+        raise ToolError(f"Invalid number: issue-{number} does not exist. Check the assigned issue number and use an existing issue; retrying this number unchanged will not succeed.")
+    import json
+    return json.dumps(dict(issue_id=f"issue-{number}", comment_id=f"comment-{comment['id']}", truncated=False))

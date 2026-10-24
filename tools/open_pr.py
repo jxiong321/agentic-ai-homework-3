@@ -10,8 +10,14 @@ def run(ctx, number, branch, title, body, idempotency_key=None):
     from harness.tracker import IssueNotFound
     from tools import ToolError
 
+    if branch != f"repomind/issue-{number}":
+        raise ToolError(f"branch must be repomind/issue-{number}.")
+    for field, value, cap in (("title", title, 200), ("body", body, 4000)):
+        if not str(value).strip() or len(str(value)) > cap:
+            raise ToolError(f"{field} must be nonblank and at most {cap} characters.")
     try:
         pr = ctx.tracker.open_pr(ctx.run_id, int(number), str(branch), str(title), str(body), key=idempotency_key)
     except IssueNotFound:
-        raise ToolError(f"issue {number} not found")
-    return f"Opened draft pull request {pr['id']} from {branch} for issue {number}."
+        raise ToolError(f"Invalid number: issue-{number} does not exist. Check the assigned issue number and use an existing issue; retrying this number unchanged will not succeed.")
+    import json
+    return json.dumps(dict(issue_id=f"issue-{number}", pr_id=f"pr-{pr['id']}", branch=branch, draft=True, truncated=False))

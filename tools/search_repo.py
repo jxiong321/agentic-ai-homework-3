@@ -1,18 +1,8 @@
-"""search_repo: literal, case-insensitive text search over the private codebase.
+"""Literal case-insensitive content search with explicit metadata.
 
-Its definition is search_repo.json. It reads a prebuilt index,
-fixtures/search_index/index.json, of every text file under fixtures/repo except
-config/, and the index records when it was built. With deep set, it reads the files
-themselves instead. Results come back in path order, one line each, as
-path:line: excerpt, then one line saying when the index was built, how many lines
-matched and how many are shown: the truncation and the index's age.
-
-**Malformed**, for Assignment 3 (Part A, task 1), is any of three things:
-  1. a query that is empty or only whitespace;
-  2. a query longer than MAX_QUERY_CHARS;
-  3. a filter that is not a valid glob (glob_problem, below).
-This stub answers a malformed query exactly as it answers one that matched nothing,
-"No matches.": the defect Part A removes. The two must differ in the raw response.
+Uses the prebuilt index or current disk files, excludes protected directories,
+and reports counts, truncation and index age. Malformed searches raise ToolError;
+a well-formed search with zero matches returns a successful empty results list.
 """
 
 from __future__ import annotations
@@ -101,20 +91,30 @@ def age(built_at: str, now: float | None = None) -> str:
     return "today" if days < 1 else f"{days} day{'s' if days != 1 else ''} ago"
 
 
-def run(ctx, query, max_results=10, filter=None, deep=False):
-    if problem(query, filter) is not None:
-        return "No matches."
+def run(ctx, query, max_results=None, path_glob=None, deep=False, response_format="concise"):
+    from tools import ToolError
+    issue = problem(query, path_glob)
+    if issue:
+        raise ToolError(f"Invalid query or path_glob: {issue}. Use 1–200 nonblank query characters and a repository-relative glob or null.")
+    if response_format not in ("concise", "detailed"):
+        raise ToolError("response_format must be concise or detailed.")
+    if max_results is not None and (type(max_results) is not int or not 1 <= max_results <= 20):
+        raise ToolError("max_results must be an integer from 1 to 20, or null for 10.")
     repo_root = Path(ctx.repo_root)
     if deep:
-        files, source = _disk(repo_root), "read from disk"
+        files, index_age = _disk(repo_root), "live disk"
     else:
         index = load_index(repo_root.parent.parent)
-        files, source = index["files"], f"index built {index['built_at']}, {age(index['built_at'])}"
-    needle = str(query).strip().lower()
-    limit = max(1, min(int(max_results), HARD_CAP))
-    hits = [f"{rel}:{number}: {line.strip()[:160]}"
-            for rel, lines in sorted(files.items()) if _matches(rel, filter)
+        files, index_age = index["files"], age(index["built_at"])
+    concise = response_format == "concise"
+    limit = min(max_results or 10, 10 if concise else 20)
+    excerpt_cap = 160 if concise else 500
+    needle = query.strip().lower()
+    hits = [{"path": rel, "line": number, "excerpt": line.strip()}
+            for rel, lines in sorted(files.items()) if _matches(rel, path_glob)
             for number, line in enumerate(lines, 1) if needle in line.lower()]
-    if not hits:
-        return "No matches."
-    return "\n".join(hits[:limit]) + f"\n[{source}; {len(hits)} matches, {min(limit, len(hits))} shown]"
+    shown = hits[:limit]
+    truncated = len(hits) > limit or any(len(h["excerpt"]) > excerpt_cap for h in shown)
+    shown = [dict(h, excerpt=h["excerpt"][:excerpt_cap]) for h in shown]
+    return json.dumps(dict(query=query, query_valid=True, count=len(hits), shown=len(shown),
+                           results=shown, truncated=truncated, index_age=index_age))

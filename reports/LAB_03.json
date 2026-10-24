@@ -1,33 +1,92 @@
 {
   "lab": "03",
   "strict": {
-    "tools": null,
-    "optional_params": null,
-    "union_types": null,
-    "compiles": null
+    "tools": 5,
+    "optional_params": 0,
+    "union_types": 2,
+    "compiles": true
   },
   "failures": {
-    "read_issue": {"transient": [], "permanent": [], "ambiguous": []},
-    "search": {"transient": [], "permanent": [], "ambiguous": []},
-    "read_file": {"transient": [], "permanent": [], "ambiguous": []},
-    "comment": {"transient": [], "permanent": [], "ambiguous": []},
-    "open_pr": {"transient": [], "permanent": [], "ambiguous": []}
+    "read_issue": {
+      "transient": [
+        "Temporary tracker read unavailability, if encountered (not simulated in current issue reads)."
+      ],
+      "permanent": [
+        "Invalid issue number or issue not found; correct the number or fix the underlying issue data."
+      ],
+      "ambiguous": []
+    },
+    "search": {
+      "transient": [
+        "Temporary storage read failure, if identified as temporary (not simulated in current search)."
+      ],
+      "permanent": [
+        "Blank or oversized query, malformed path glob, invalid result limit or response format.",
+        "Missing or corrupt search index requires repair; repeating the unchanged call does not fix it."
+      ],
+      "ambiguous": []
+    },
+    "read_file": {
+      "transient": [
+        "Temporary storage read failure, if identified as temporary (not simulated in current file reads)."
+      ],
+      "permanent": [
+        "Missing file, wrong path capitalization, excluded or outside-repository path, non-text file, or invalid response format."
+      ],
+      "ambiguous": []
+    },
+    "comment": {
+      "transient": [
+        "Transport failure known to occur before dispatch, if encountered; no write could have occurred."
+      ],
+      "permanent": [
+        "Invalid or missing issue; blank or oversized comment body; invalid arguments."
+      ],
+      "ambiguous": [
+        "Timeout after dispatch: the comment may already have committed. Every simulated TrackerTimeout is treated as ambiguous, including one secretly raised before commit."
+      ]
+    },
+    "open_pr": {
+      "transient": [
+        "Transport failure known to occur before dispatch, if encountered; no write could have occurred."
+      ],
+      "permanent": [
+        "Invalid or missing issue; incorrect branch; blank or oversized title/body; invalid arguments."
+      ],
+      "ambiguous": [
+        "Timeout after dispatch: the PR may already have committed. Every simulated TrackerTimeout is treated as ambiguous, including one secretly raised before commit."
+      ]
+    }
   },
-  "protocol_error_policy": null,
+  "protocol_error_policy": "end_run",
   "surface": {
-    "tokens_before": null,
-    "tokens_after": null,
-    "list_tokens_before": null,
-    "list_tokens_after": null,
-    "calls_per_run": null,
-    "cost_per_run_before": null,
-    "cost_per_run_after": null,
-    "cost_per_run_all_five": null
+    "tokens_before": 386,
+    "tokens_after": 2056,
+    "list_tokens_before": 117,
+    "list_tokens_after": 1337,
+    "calls_per_run": 5.666666666666667,
+    "cost_per_run_before": 0.00016777499999999992,
+    "cost_per_run_after": 0.0013865499999999994,
+    "cost_per_run_all_five": 0.0034952000000000026
   },
   "writes": {
-    "harness": {"runs": null, "comments_per_run_max": null, "duplicate_comment_runs": null, "prs_correct_runs": null,
-                "committed_timeouts": null, "escalated": null, "triage_passes": null},
-    "control": {"runs": null, "comments_per_run_max": null, "duplicate_comment_runs": null, "prs_correct_runs": null,
-                "committed_timeouts": null, "escalated": null, "triage_passes": null}
+    "harness": {
+      "runs": 12,
+      "comments_per_run_max": 1,
+      "duplicate_comment_runs": 0,
+      "prs_correct_runs": 12,
+      "committed_timeouts": 5,
+      "escalated": 1,
+      "triage_passes": 4
+    },
+    "control": {
+      "runs": 12,
+      "comments_per_run_max": 3,
+      "duplicate_comment_runs": 4,
+      "prs_correct_runs": 11,
+      "committed_timeouts": 13,
+      "escalated": 6,
+      "triage_passes": 2
+    }
   }
 }

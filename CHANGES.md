@@ -14,6 +14,8 @@ Removals are logged like additions.
 - **Constrained:** every tool call to a step of a validated plan; revisions to steps not yet done; the comment to drafts that pass the second pass
 
 ## Assignment 3
-- **Added:**
-- **Removed:**
-- **Constrained:**
+- **Added:** five redesigned tool definitions and examples; input/output boundary validation; actionable errors and bounded transient retries; draft-before-write execution; stable write keys, existence checks, timeout verification and escalation; per-attempt call records and fail-closed hooks; control switches and regression tests.
+- **Removed:** generic tool names, vague descriptions and free-text filters; blind write retries in the normal configuration.
+- **Constrained:** the plan to one PR immediately before one final comment; the comment to the prepared draft; writes to verified, bounded recovery with stable arguments and keys, with deliberate naive behavior only under control switches.
+
+Part D: added provider token-difference measurements in `eval/price_surface.py`, tracker-based counts and surface pricing in `eval/measure_03.py`, pre-evaluation predictions, and focused measurement tests. Reviser requests now include the tool list required by the measurement design.

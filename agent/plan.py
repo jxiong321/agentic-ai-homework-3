@@ -65,13 +65,15 @@ def make_plan(client, issue_number: int, tool_schemas: list[dict], trace=None, *
             "steps": _submitted(response)}
 
 
-def revise_plan(client, plan: dict, step_results: list[dict], trace=None) -> dict:
+def revise_plan(client, plan: dict, step_results: list[dict], trace=None, *, tool_schemas=None) -> dict:
     """A repair, not a replacement. Sees structured step results only, never `args`."""
     structured = [{k: r.get(k) for k in STRUCTURED} for r in step_results]
     user = ("A checkpoint's check failed. Repair the plan: you may change a step that failed, to retry it, "
             "and any step not yet run; keep every step marked done exactly as it is.\n\n"
             f"The plan:\n{json.dumps(plan.get('steps', []), indent=1)}\n\n"
             f"Results of the steps that have run:\n{json.dumps(structured, indent=1)}")
+    if tool_schemas is not None:
+        user += "\n\nThe tools the plan may use:\n" + _tool_list(tool_schemas)
     response = client.create(system=_prompt(REVISER_PROMPT), messages=[{"role": "user", "content": user}],
                              tools=[SUBMIT_PLAN])
     if trace is not None:
