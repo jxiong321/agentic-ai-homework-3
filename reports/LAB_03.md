@@ -164,6 +164,14 @@ Counts come from SQLite, grouped by run_id; terminal outcomes come from traces. 
 
 <!-- PART_D_MEASUREMENTS_END -->
 
+## Transparent follow-up experiment
+
+The original 24-run batch is retained in `reports/batches/original/`; its full code, run files and tracker database are preserved in Git commit `e6cce1c74a9430b5d0feefe804ed8ac694e21845`. Its automated score was 81.33/82, not a full pass. The harness left 11 single comments and one run with no writes; the latter rejected three invalid plans, with missing step IDs in the final attempt. There were no duplicate harness writes. Control runs produced seven extra comments across four runs, rather than the predicted six across five. No duplicate PRs occurred in either arm.
+
+After inspecting these results, we changed only general planner format guidance and repair context: each request now shows the complete required step fields and correctly serialized examples; a retry receives the previous rejected plan alongside its validation errors. The validator still rejects malformed plans, the retry bound is unchanged, and no missing fields are silently supplied by the harness. No evaluation answers were added to prompts or execution code. Both arms of the follow-up will use the same revised code. This is a post-evaluation improvement, not an independent preregistered replication; instructor acceptance of the follow-up as graded evidence is not assumed.
+
+Offline regression verification: 95 tests ran, 93 passed and 2 starter-only tests skipped. New scripted development tests inject missing IDs, missing tool names and incomplete args_json, verify that retries receive the rejected plan and repair facts before any tool dispatch, and verify that three invalid plans still escalate with no writes. Live development verification and follow-up measurements are pending. The first-batch reports and predictions remain unchanged in the snapshot. The original predictions were pushed before the original evaluation; they are not being rewritten to match observed outcomes.
+
 ## AI assistance
 
 Which tool, what it wrote, and what you checked:

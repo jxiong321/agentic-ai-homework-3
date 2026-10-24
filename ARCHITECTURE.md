@@ -22,10 +22,10 @@ The table includes Assignment 3 tool validation and write-recovery controls.
 | Layer | What does this job | Where it is enforced | Status |
 |---|---|---|---|
 | Model | The configured model, called only through the metered client | `harness/client.py:120` | present |
-| Harness | Bounded loop, validated plans, fixed execution order, prepared draft before either write | `agent/loop.py:32`, `ways/planned.py:91`, `ways/planned.py:316` | present |
+| Harness | Bounded loop, validated plans, fixed execution order, prepared draft before either write | `agent/loop.py:32`, `ways/planned.py:91`, `ways/planned.py:318` | present |
 | Tools | Five structured tools; argument/result boundary checks, derived write keys, pre-write checks and verified recovery | `tools/__init__.py:276`, `tools/validation.py:22`, `tools/validation.py:60`, `tools/__init__.py:96`, `tools/__init__.py:212` | present |
 | Memory & State | A run's progress file, outside the model's context | `ways/notes.py:67` | partial: nothing survives a run |
-| Control & Policy | Review before writes, fail-closed hooks, escalation when write outcomes cannot be confirmed | `ways/planned.py:316`, `tools/__init__.py:164`, `tools/__init__.py:187` | partial: operator review required, no approval UI |
+| Control & Policy | Review before writes, fail-closed hooks, escalation when write outcomes cannot be confirmed | `ways/planned.py:318`, `tools/__init__.py:164`, `tools/__init__.py:187` | partial: operator review required, no approval UI |
 | Observability | Model/plan traces, protocol diagnostics, and per-attempt tool records including keys and denied calls | `tools/__init__.py:152`, `tools/__init__.py:145`, `harness/calls.py:47` | partial: records, no alert delivery |
 | Evaluation | The grounded check reads the tracker, never the agent | `eval/check_triage.py:7` | partial: offline only |
 

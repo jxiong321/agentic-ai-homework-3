@@ -19,3 +19,5 @@ Removals are logged like additions.
 - **Constrained:** the plan to one PR immediately before one final comment; the comment to the prepared draft; writes to verified, bounded recovery with stable arguments and keys, with deliberate naive behavior only under control switches.
 
 Part D: added provider token-difference measurements in `eval/price_surface.py`, tracker-based counts and surface pricing in `eval/measure_03.py`, pre-evaluation predictions, and focused measurement tests. Reviser requests now include the tool list required by the measurement design.
+
+Post-measurement follow-up: preserve the entire original batch and its reports; add complete step-format examples and rejected-plan context to the planner. Keep validation, write controls, and retry bounds unchanged. A second measured batch is explicitly disclosed as post-evaluation work.

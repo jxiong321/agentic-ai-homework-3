@@ -1,0 +1,31 @@
+{
+  "commit": "e6cce1c74a9430b5d0feefe804ed8ac694e21845",
+  "status": "Original measured batch; retained, not replaced or discarded from the report",
+  "run_ids": [
+    "planned-4201-s01-11e267",
+    "planned-4201-s02-c94794",
+    "planned-4202-s01-f3ea8d",
+    "planned-4202-s02-f199a9",
+    "planned-4203-s01-2b9b73",
+    "planned-4203-s02-174118",
+    "planned-4204-s01-787d14",
+    "planned-4204-s02-91609b",
+    "planned-4205-s01-bf2d1a",
+    "planned-4205-s02-e6cef2",
+    "planned-4206-s01-248d98",
+    "planned-4206-s02-83efe1",
+    "planned-4201-s03-fcab2b",
+    "planned-4201-s04-e6448b",
+    "planned-4202-s03-909c8d",
+    "planned-4202-s04-49e18d",
+    "planned-4203-s03-12973c",
+    "planned-4203-s04-1f3429",
+    "planned-4204-s03-79f971",
+    "planned-4204-s04-c517bd",
+    "planned-4205-s03-c16137",
+    "planned-4205-s04-119a07",
+    "planned-4206-s03-87d154",
+    "planned-4206-s04-f45cb6"
+  ],
+  "evidence": "All traces, call records, code, and tracker/tracker.db are preserved at this commit. Any reset also archives the database and evaluation traces."
+}

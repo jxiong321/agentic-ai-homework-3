@@ -132,8 +132,10 @@ def schema_check(ctx, plan: dict, version: int) -> list[dict]:
 def plan_until_valid(ctx) -> dict | None:
     """The reject exit: re-plan up to MAX_REPLANS times, then escalate. Never execute a rejected plan."""
     failures = None
+    previous_plan = None
     for attempt in range(1, MAX_REPLANS + 2):
-        plan = make_plan(ctx.client, ctx.issue_number, ctx.tools.schemas, trace=ctx.trace, failures=failures)
+        plan = make_plan(ctx.client, ctx.issue_number, ctx.tools.schemas, trace=ctx.trace, failures=failures, previous_plan=previous_plan)
+        previous_plan = plan
         broken = schema_check(ctx, plan, 1)
         if broken:                                # rejected before the four checks: it never runs
             failures = broken

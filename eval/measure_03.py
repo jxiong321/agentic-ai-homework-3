@@ -207,7 +207,9 @@ def main():
     report.update(surface=surface, writes=writes); path.write_text(json.dumps(report, indent=2) + "\n")
     path = ROOT / "reports/LAB_03.md"; report = path.read_text()
     first = report.index("## Part D · Measure"); last = report.index("## AI assistance", first)
-    report = report[:first] + "## Part D · Measure\n\n" + render(counts, surface, writes, rows, observations) + "\n\n" + report[last:]
+    followup = report.find("## Transparent follow-up experiment", first, last)
+    preserved = report[followup:last] if followup >= 0 else ""
+    report = report[:first] + "## Part D · Measure\n\n" + render(counts, surface, writes, rows, observations) + "\n\n" + preserved + report[last:]
     report = report.replace("Part D and final review remain pending.", "Codex also implemented Part D token-difference pricing and database-based counting, drafted pre-evaluation predictions, and generated the measured report. I ran the live experiments; final interpretation is reviewed together.")
     path.write_text(report)
     print(json.dumps(dict(surface=surface, writes=writes), indent=2))
